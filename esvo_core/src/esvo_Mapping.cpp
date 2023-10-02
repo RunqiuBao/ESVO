@@ -609,7 +609,7 @@ void esvo_Mapping::stampedPoseCallback(
 {
   std::lock_guard<std::mutex> lock(data_mutex_);
   // To check inconsistent timestamps and reset.
-  static constexpr double max_time_diff_before_reset_s = 0.5;
+  static constexpr double max_time_diff_before_reset_s = 1.5;
   const ros::Time stamp_first_event = ps_msg->header.stamp;
   std::string *err_tf = new std::string();
 //  int iGetLastest_common_time =
@@ -672,7 +672,7 @@ void esvo_Mapping::eventsCallback(
 {
   std::lock_guard<std::mutex> lock(data_mutex_);
 
-  static constexpr double max_time_diff_before_reset_s = 0.5;
+  static constexpr double max_time_diff_before_reset_s = 1.5;
   const ros::Time stamp_first_event = msg->events[0].ts;
 
   // check time stamp inconsistency
@@ -721,11 +721,12 @@ void esvo_Mapping::timeSurfaceCallback(
   // check time-stamp inconsistency
   if(!TS_history_.empty())
   {
-    static constexpr double max_time_diff_before_reset_s = 0.5;
+    static constexpr double max_time_diff_before_reset_s = 1.5;
     const ros::Time stamp_last_image = TS_history_.rbegin()->first;
     const double dt = time_surface_left->header.stamp.toSec() - stamp_last_image.toSec();
     if(dt < 0 || std::fabs(dt) >= max_time_diff_before_reset_s)
     {
+      LOG(INFO) << "max_time_diff_before_reset_s: " << std::to_string(max_time_diff_before_reset_s);
       ROS_INFO("Inconsistent frame timestamp detected <timeSurfaceCallback> (new: %f, old %f), resetting.",
                time_surface_left->header.stamp.toSec(), stamp_last_image.toSec());
       reset();
@@ -787,6 +788,7 @@ void esvo_Mapping::reset()
 
   for(int i = 0;i < 2;i++)
     LOG(INFO) << "****************************************************";
+  LOG(INFO) << "****************** FUCK YOU *********************";
   LOG(INFO) << "****************** RESET THE SYSTEM *********************";
   for(int i = 0;i < 2;i++)
     LOG(INFO) << "****************************************************\n\n";

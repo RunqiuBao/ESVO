@@ -1,0 +1,10 @@
+<launch>
+  <!-- ROS BAG -->
+  <!-- <rosparam param="/use_sim_time">true</rosparam> -->
+  <node name="stereo_dvs_publisher_node" type="stereo_dvs_publisher_node" pkg="mysensormock" output="screen">
+    <param name="log_level" type="string" value="DEBUG" />
+  </node>
+
+  <!-- Publish stereo camera calibration -->
+  <include file="$(find esvo_time_surface)/launch/rosbag_launcher/simu_calib_info.launch" />
+</launch>

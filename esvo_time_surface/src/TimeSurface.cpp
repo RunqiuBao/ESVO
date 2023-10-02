@@ -301,6 +301,7 @@ void TimeSurface::syncCallback(const std_msgs::TimeConstPtr& msg)
     TicToc tt;
     tt.tic();
 #endif
+    ROS_INFO_STREAM("sync_time_: " << sync_time_);
     if(NUM_THREAD_TS == 1)
       createTimeSurfaceAtTime(sync_time_);
     if(NUM_THREAD_TS > 1)
@@ -421,12 +422,13 @@ void TimeSurface::eventsCallback(const dvs_msgs::EventArray::ConstPtr& msg)
     const dvs_msgs::Event& last_event = events_.back();
     pEventQueueMat_->insertEvent(last_event);
   }
+  ROS_INFO_STREAM("received events: " << msg->events.size());
   clearEventQueue();
 }
 
 void TimeSurface::clearEventQueue()
 {
-  static constexpr size_t MAX_EVENT_QUEUE_LENGTH = 5000000;
+  static constexpr size_t MAX_EVENT_QUEUE_LENGTH = 10000000;
   if (events_.size() > MAX_EVENT_QUEUE_LENGTH)
   {
     size_t remove_events = events_.size() - MAX_EVENT_QUEUE_LENGTH;

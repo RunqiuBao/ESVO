@@ -1,0 +1,24 @@
+<launch>
+  <!-- Publish stereo camera calibration on predefined ROS topics -->
+  <node name="davis_left_cam_info_pub" pkg="rostopic" type="rostopic"
+    args="pub /davis/left/camera_info sensor_msgs/CameraInfo
+    '{header: {seq: 0, stamp: {secs: 0, nsecs: 0}, frame_id: ''},
+    height: 720, width: 1280, distortion_model: 'plumb_bob',
+    D: [-0., 0., -0., 0],
+    K: [888.889, 0, 639.5, 0, 888.889, 639.5, 0.0, 0.0, 1.0],
+    R: [1, 0, -0., 0., 1., -0., 0., 0., 1.],
+    P: [888.889, 0, 639.5, 0, 0, 888.889, 639.5, 0.0, 0.0, 0.0, 1.0, 0.0],
+    binning_x: 0, binning_y: 0,
+    roi: {x_offset: 0, y_offset: 0, height: 0, width: 0, do_rectify: false} }' -r 1000" />
+
+  <node name="davis_right_cam_info_pub" pkg="rostopic" type="rostopic"
+    args="pub /davis/right/camera_info sensor_msgs/CameraInfo
+    '{header: {seq: 0, stamp: {secs: 0, nsecs: 0}, frame_id: ''},
+    height: 720, width: 1280, distortion_model: 'plumb_bob',
+    D: [-0., 0., -0., 0],
+    K: [888.889, 0, 639.5, 0, 888.889, 639.5, 0.0, 0.0, 1.0],
+    R: [1, 0, -0., 0., 1., -0., 0., 0., 1.],
+    P: [888.889, 0, 639.5, -711.11, 0, 888.889, 639.5, 0.0, 0.0, 0.0, 1.0, 0.0],
+    binning_x: 0, binning_y: 0,
+    roi: {x_offset: 0, y_offset: 0, height: 0, width: 0, do_rectify: false} }' -r 1000" />
+</launch>
