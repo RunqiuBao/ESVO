@@ -199,12 +199,14 @@ void esvo_Mapping::MappingLoop(
       break;
     }
     //
+    LOG(INFO) << "TS_history_ size: " << std::to_string(TS_history_.size());
     if(TS_history_.size() >= 10)/* To assure the esvo_time_surface node has been working. */
     {
       while(true)
       {
         if(data_mutex_.try_lock())
-        {
+        {    
+          LOG(INFO) << "calling dataTransferring()" << std::endl;
           dataTransferring();
           data_mutex_.unlock();
           break;
@@ -447,8 +449,10 @@ bool esvo_Mapping::InitializationAtTime(const ros::Time &t)
   // get the event map (binary mask)
   cv::Mat edgeMap;
   std::vector<std::pair<size_t, size_t> > vEdgeletCoordinates;
+  ROS_INFO_STREAM("vEventsPtr_left_SGM_ size: " << std::to_string(vEventsPtr_left_SGM_.size()));
   createEdgeMask(vEventsPtr_left_SGM_, camSysPtr_->cam_left_ptr_,
-                 edgeMap, vEdgeletCoordinates, true, 0);
+                 edgeMap, vEdgeletCoordinates, false, 0);
+  cv::imwrite("/root/data/" + std::to_string(t.nsec) + ".png", edgeMap);
 
   // Apply logical "AND" operation and transfer "disparity" to "invDepth".
   std::vector<DepthPoint> vdp_sgm;
@@ -540,10 +544,16 @@ bool esvo_Mapping::dataTransferring()
     vEventsPtr_left_SGM_.clear();
     ros::Time t_end    = TS_obs_.first;
     ros::Time t_begin(std::max(0.0, t_end.toSec() - 2 * BM_half_slice_thickness_));
+    ROS_INFO_STREAM("t_end: " << t_end);
+    ROS_INFO_STREAM("t_begin: " << t_begin);
+    ROS_INFO_STREAM("events_left_[0]: " << events_left_.front().ts);
+    ROS_INFO_STREAM("events_left_[-1]: " << events_left_.back().ts);
     auto ev_end_it     = tools::EventBuffer_lower_bound(events_left_, t_end);
     auto ev_begin_it   = tools::EventBuffer_lower_bound(events_left_, t_begin);
     const size_t MAX_NUM_Event_INVOLVED = 30000;
     vEventsPtr_left_SGM_.reserve(MAX_NUM_Event_INVOLVED);
+    ROS_INFO_STREAM("events_left_ size: " << events_left_.size());
+    ROS_INFO_STREAM("ev_end_it == ev_begin_it: " << std::to_string(ev_end_it == ev_begin_it));
     while(ev_end_it != ev_begin_it && vEventsPtr_left_SGM_.size() <= PROCESS_EVENT_NUM_)
     {
       vEventsPtr_left_SGM_.push_back(ev_end_it._M_cur);
@@ -607,6 +617,7 @@ bool esvo_Mapping::dataTransferring()
 void esvo_Mapping::stampedPoseCallback(
   const geometry_msgs::PoseStampedConstPtr &ps_msg)
 {
+  // LOG(INFO) << "lock in esvo_Mapping::stampedPoseCallback";
   std::lock_guard<std::mutex> lock(data_mutex_);
   // To check inconsistent timestamps and reset.
   static constexpr double max_time_diff_before_reset_s = 1.5;
@@ -640,6 +651,8 @@ void esvo_Mapping::stampedPoseCallback(
       ps_msg->pose.position.z));
   tf::StampedTransform st(tf, ps_msg->header.stamp, ps_msg->header.frame_id, dvs_frame_id_.c_str());
   tf_->setTransform(st);
+
+  // LOG(INFO) << "unlock in esvo_Mapping::stampedPoseCallback";
 }
 
 // return the pose of the left event cam at time t.
@@ -670,6 +683,7 @@ void esvo_Mapping::eventsCallback(
   const dvs_msgs::EventArray::ConstPtr& msg,
   EventQueue& EQ)
 {
+  // LOG(INFO) << "lock in esvo_Mapping::eventsCallback";
   std::lock_guard<std::mutex> lock(data_mutex_);
 
   static constexpr double max_time_diff_before_reset_s = 1.5;
@@ -700,6 +714,7 @@ void esvo_Mapping::eventsCallback(
     EQ[i+1] = e;
   }
   clearEventQueue(EQ);
+  // LOG(INFO) << "unlock in esvo_Mapping::eventsCallback";
 }
 
 void
@@ -717,6 +732,7 @@ void esvo_Mapping::timeSurfaceCallback(
   const sensor_msgs::ImageConstPtr& time_surface_left,
   const sensor_msgs::ImageConstPtr& time_surface_right)
 {
+  // LOG(INFO) << "lock in esvo_Mapping::timeSurfaceCallback";
   std::lock_guard<std::mutex> lock(data_mutex_);
   // check time-stamp inconsistency
   if(!TS_history_.empty())
@@ -760,6 +776,7 @@ void esvo_Mapping::timeSurfaceCallback(
     auto it = TS_history_.begin();
     TS_history_.erase(it);
   }
+  // LOG(INFO) << "unlock in esvo_Mapping::timeSurfaceCallback";
 }
 
 void esvo_Mapping::reset()
@@ -809,6 +826,7 @@ void esvo_Mapping::onlineParameterChangeCallback(DVS_MappingStereoConfig &config
 {
   bool online_parameters_changed = false;
   {
+    // LOG(INFO) << "lock in esvo_Mapping::onlineParameterChangeCallback";
     std::lock_guard<std::mutex> lock(data_mutex_);
 
     if(invDepth_min_range_ != config.invDepth_min_range ||
@@ -850,6 +868,8 @@ void esvo_Mapping::onlineParameterChangeCallback(DVS_MappingStereoConfig &config
     BM_max_disparity_ = config.BM_max_disparity;
     BM_step_ = config.BM_step;
     BM_ZNCC_Threshold_ = config.BM_ZNCC_Threshold;
+
+    // LOG(INFO) << "unlock in esvo_Mapping::onlineParameterChangeCallback";
   }
 
   if(config.mapping_rate_hz != mapping_rate_hz_)
@@ -861,9 +881,11 @@ void esvo_Mapping::onlineParameterChangeCallback(DVS_MappingStereoConfig &config
 
   if(online_parameters_changed)
   {
+    // LOG(INFO) << "lock in onlineParameterChangeCallback";
     std::lock_guard<std::mutex> lock(data_mutex_);
     LOG(INFO) << "onlineParameterChangeCallback ==============";
     reset();
+    // LOG(INFO) << "unlock in onlineParameterChangeCallback";
   }
 }
 

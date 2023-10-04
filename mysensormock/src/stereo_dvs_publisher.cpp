@@ -72,7 +72,7 @@ float GetOneArray(dvs_msgs::EventArray& leftEvents, std::ifstream& fileLeftData,
 		dvs_msgs::Event oneEvent;
 		oneEvent.x = std::stoi(splitsLine[1]);
 		oneEvent.y = std::stoi(splitsLine[2]);
-        ros::Duration eventTimeBias(std::stof(splitsLine[0]) + 1e-6);
+        ros::Duration eventTimeBias(std::stof(splitsLine[0]));
         ts = tsBase + eventTimeBias;
         oneEvent.ts = ts;
 		oneEvent.polarity = static_cast<bool>(std::stoi(splitsLine[3]));
@@ -147,7 +147,7 @@ int main(int argc, char **argv)
    * A count of how many messages we have sent. This is used to create
    * a unique string for each message.
    */
-  std::string datarootPath = "/root/data/vibrationRollerNight/seq0/";
+  std::string datarootPath = "/root/data/vibrationRollerNight/seq1/";
   
   // open data files
   std::filesystem::path leftDataPath = datarootPath;
@@ -190,7 +190,7 @@ int main(int argc, char **argv)
   ROS_INFO("right data file opened.");
   bool bIsNotEndOfData = true;
   size_t frameCount = 0;
-  float perStackTimeLength = 0.03;  // sec.
+  float perStackTimeLength = 0.02;  // sec.
   while (ros::ok())
   {
     /**

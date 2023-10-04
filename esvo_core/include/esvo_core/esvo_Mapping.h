@@ -39,6 +39,7 @@
 
 namespace esvo_core
 {
+
 using namespace core;
 class esvo_Mapping
 {
