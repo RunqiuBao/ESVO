@@ -1,0 +1,5 @@
+<launch>
+  <node name="clock_publisher_node" type="clock_publisher_node" pkg="mysensormock" output="screen">
+    <param name="log_level" type="string" value="DEBUG" />
+  </node>
+</launch>

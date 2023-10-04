@@ -123,9 +123,10 @@ include_directories(
 )
 
 # Declare a C++ library
-add_library(${PROJECT_NAME}
-  src/stereo_dvs_publisher.cpp
-)
+# add_library(${PROJECT_NAME}
+#   src/stereo_dvs_publisher.cpp
+#   src/clock_publisher.cpp
+# )
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -136,6 +137,7 @@ add_library(${PROJECT_NAME}
 # With catkin_make all packages are built within a single CMake context
 # The recommended prefix ensures that target names across packages don't collide
 add_executable(stereo_dvs_publisher_node src/stereo_dvs_publisher.cpp)
+add_executable(clock_publisher_node src/clock_publisher.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -149,6 +151,10 @@ add_executable(stereo_dvs_publisher_node src/stereo_dvs_publisher.cpp)
 
 # Specify libraries to link a library or executable target against
 target_link_libraries(stereo_dvs_publisher_node
+  ${catkin_LIBRARIES}
+)
+
+target_link_libraries(clock_publisher_node
   ${catkin_LIBRARIES}
 )
 
@@ -169,6 +175,10 @@ target_link_libraries(stereo_dvs_publisher_node
 # Mark executables for installation
 # See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_executables.html
 install(TARGETS stereo_dvs_publisher_node
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
+install(TARGETS clock_publisher_node
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

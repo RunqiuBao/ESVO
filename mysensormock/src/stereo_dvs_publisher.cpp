@@ -11,6 +11,7 @@
 #include <filesystem>
 #include <sstream>
 #include <vector>
+#include <thread>
 
 std::vector<std::string> SplitString(const std::string& input, const std::string delimiter) {
     std::vector<std::string> tokens;
@@ -41,52 +42,67 @@ std::vector<std::string> SplitTimeString(const std::string& timeString) {
     return tokens;
 }
 
-float GetOneArray(dvs_msgs::EventArray& leftEvents, std::ifstream& fileLeftData, const size_t frameCount, bool bIsNotEndOfData, const ros::Time tsBase, const float stackTimeLength, const float tsToStop = 1e9){
+void LoadEventsIntoMemory(std::vector<size_t>& vX, std::vector<size_t>& vY, std::vector<float>& vTs, std::vector<bool>& vP, std::ifstream& fileLeftData) {
+    bool bIsNotEndOfData = true;
+    std::string line;
+    while (bIsNotEndOfData) {
+        std::getline(fileLeftData, line);
+        if (fileLeftData.eof()){
+            bIsNotEndOfData = false;
+        }
+        else{
+            std::vector<std::string> splitsLine = SplitString(line, " ");  // t, x, y, p
+            vX.push_back(std::stoi(splitsLine[1]));
+            vY.push_back(std::stoi(splitsLine[2]));
+            vTs.push_back(std::stof(splitsLine[0]));
+            vP.push_back(static_cast<bool>(std::stoi(splitsLine[3])));
+        }
+    }
+    ROS_INFO("finsihed loading one event data file. (%d)", vX.size());
+}
+
+float GetOneArray(dvs_msgs::EventArray& leftEvents, std::vector<size_t>& vX, std::vector<size_t>& vY, std::vector<float>& vTs, std::vector<bool>& vP, size_t& eventCount, const size_t frameCount, const ros::Time tsBase, const float stackTimeLength, const float tsToStop = 1e9){
     ROS_INFO("Entered GetOneArray");
     leftEvents.height = 720;
     leftEvents.width = 1280;
     std_msgs::Header header;
 
     std::string line;
-    bool bIsLoop = true;
-    std::string sLeftStartTimeStamp = "-1";
+    float sLeftStartTimeStamp = -1;
     float fLeftLatestTimeStamp = 0.;
     ros::Time ts;
-    while (bIsLoop) {
-        std::getline(fileLeftData, line);
-	if (fileLeftData.eof()){
-		bIsNotEndOfData = false;
-	}
-	if (bIsNotEndOfData){
-		std::vector<std::string> splitsLine = SplitString(line, " ");  // t, x, y, p
-		if (sLeftStartTimeStamp == "-1") {
-		    sLeftStartTimeStamp = splitsLine[0];
-		}else{
-            if (std::stof(splitsLine[0]) > tsToStop){
+    while (true) {
+        if (eventCount >= vTs.size()){
+            ROS_INFO("end of events.");
+            break;
+        }
+        if (sLeftStartTimeStamp == -1) {
+            sLeftStartTimeStamp = vTs[eventCount];
+        }else{
+            if (vTs[eventCount] > tsToStop){
                 break;
             }
-		    if ((std::stof(splitsLine[0]) - std::stof(sLeftStartTimeStamp)) > stackTimeLength) {
-		    	break;
-		    }
-		}
-		dvs_msgs::Event oneEvent;
-		oneEvent.x = std::stoi(splitsLine[1]);
-		oneEvent.y = std::stoi(splitsLine[2]);
-        ros::Duration eventTimeBias(std::stof(splitsLine[0]));
+            if ((vTs[eventCount] - sLeftStartTimeStamp) > stackTimeLength) {
+                break;
+            }
+        }
+        dvs_msgs::Event oneEvent;
+        oneEvent.x = vX[eventCount];
+        oneEvent.y = vY[eventCount];
+        ros::Duration eventTimeBias(vTs[eventCount]);
         ts = tsBase + eventTimeBias;
         oneEvent.ts = ts;
-		oneEvent.polarity = static_cast<bool>(std::stoi(splitsLine[3]));
-		leftEvents.events.push_back(oneEvent);
-        fLeftLatestTimeStamp = std::stof(splitsLine[0]);
-	}
-
+        oneEvent.polarity = vP[eventCount];
+        leftEvents.events.push_back(oneEvent);
+        fLeftLatestTimeStamp = vTs[eventCount];
+        eventCount++;
     }
     ROS_DEBUG("finished loading events.");
-    if (bIsNotEndOfData){
-   	 header.stamp = tsBase;
-   	 header.seq = frameCount;
-   	 header.frame_id = sLeftStartTimeStamp;
-   	 leftEvents.header = header; 
+    if (eventCount < vTs.size()){
+   	    header.stamp = tsBase;
+   	    header.seq = frameCount;
+   	    header.frame_id = std::to_string(sLeftStartTimeStamp);
+   	    leftEvents.header = header; 
     }
     ROS_DEBUG("finished GetOneArray with success.");
     return fLeftLatestTimeStamp;
@@ -141,7 +157,7 @@ int main(int argc, char **argv)
   ros::Publisher right_pub = n.advertise<dvs_msgs::EventArray>("/davis/right/events", 100);
   ros::Publisher clock_publisher = n.advertise<rosgraph_msgs::Clock>("/clock", 10);
 
-  ros::Rate loop_rate(1);
+  ros::Rate loop_rate(10000);
   ROS_INFO("set up publishers.");
   /**
    * A count of how many messages we have sent. This is used to create
@@ -188,9 +204,19 @@ int main(int argc, char **argv)
       }
   }
   ROS_INFO("right data file opened.");
-  bool bIsNotEndOfData = true;
+  std::vector<size_t> vXLeft, vXRight;
+  std::vector<size_t> vYLeft, vYRight;
+  std::vector<float> vTsLeft, vTsRight;
+  std::vector<bool> vPLeft, vPRight;
+
+  LoadEventsIntoMemory(vXLeft, vYLeft, vTsLeft, vPLeft, fileLeftData);
+  LoadEventsIntoMemory(vXRight, vYRight, vTsRight, vPRight, fileRightData);
+
   size_t frameCount = 0;
+  size_t eventCountLeft = 0;
+  size_t eventCountRight = 0;
   float perStackTimeLength = 0.02;  // sec.
+
   while (ros::ok())
   {
     /**
@@ -202,20 +228,12 @@ int main(int argc, char **argv)
     tsBase.sec = tsBaseW.sec;
     tsBase.nsec = tsBaseW.nsec;
     dvs_msgs::EventArray leftEvents;
-    float leftTimeSpan = GetOneArray(leftEvents, fileLeftData, frameCount, bIsNotEndOfData, tsBase, perStackTimeLength);
+    float leftTimeSpan = GetOneArray(leftEvents, vXLeft, vYLeft, vTsLeft, vPLeft, eventCountLeft, frameCount, tsBase, perStackTimeLength);
     ROS_INFO_STREAM("frameCount: " << std::to_string(frameCount) << ", leftEvents length: " << std::to_string(leftEvents.events.size()) <<  ", left event timeStamp: " << std::to_string(leftEvents.events[0].ts.sec) <<  " sec, " << std::to_string(leftEvents.events[0].ts.nsec)<< " nsec.");
-    if (!bIsNotEndOfData){
-	    ROS_INFO("End of Data.");
-    	break;
-    }
 
     dvs_msgs::EventArray rightEvents;
-    GetOneArray(rightEvents, fileRightData, frameCount, bIsNotEndOfData, tsBase, perStackTimeLength, leftTimeSpan);
+    GetOneArray(rightEvents, vXRight, vYRight, vTsRight, vPRight, eventCountRight, frameCount, tsBase, perStackTimeLength, leftTimeSpan);
     ROS_INFO_STREAM("frameCount: " << std::to_string(frameCount) << ", rightEvents length: " << std::to_string(rightEvents.events.size()) <<  ", right event timeStamp: " << std::to_string(rightEvents.events[0].ts.sec) <<  " sec, " << std::to_string(rightEvents.events[0].ts.nsec)<< " nsec."); 
-    if (!bIsNotEndOfData){
-	    ROS_INFO("End of Data.");
-    	break;
-    }
     auto end_time = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_seconds = end_time - start_time;
     ROS_INFO_STREAM("Loading events caused: " << elapsed_seconds.count() << " sec.");
@@ -223,9 +241,6 @@ int main(int argc, char **argv)
     left_pub.publish(leftEvents);
     right_pub.publish(rightEvents);
 
-    rosgraph_msgs::Clock clock_msg;
-    clock_msg.clock = tsBase;
-    clock_publisher.publish(clock_msg);
     frameCount++;
     ros::spinOnce();
 
