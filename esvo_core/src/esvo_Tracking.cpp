@@ -312,7 +312,7 @@ void esvo_Tracking::eventsCallback(
 
 void esvo_Tracking::clearEventQueue()
 {
-  static constexpr size_t MAX_EVENT_QUEUE_LENGTH = 500000;
+  static constexpr size_t MAX_EVENT_QUEUE_LENGTH = 5000000;
   if (events_left_.size() > MAX_EVENT_QUEUE_LENGTH)
   {
     size_t remove_events = events_left_.size() - MAX_EVENT_QUEUE_LENGTH;

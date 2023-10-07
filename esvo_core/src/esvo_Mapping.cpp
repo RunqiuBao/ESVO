@@ -454,7 +454,7 @@ bool esvo_Mapping::InitializationAtTime(const ros::Time &t)
   std::vector<std::pair<size_t, size_t> > vEdgeletCoordinates;
   ROS_INFO_STREAM("vEventsPtr_left_SGM_ size: " << std::to_string(vEventsPtr_left_SGM_.size()));
   createEdgeMask(vEventsPtr_left_SGM_, camSysPtr_->cam_left_ptr_,
-                 edgeMap, vEdgeletCoordinates, false, 1);
+                 edgeMap, vEdgeletCoordinates, true, 0);
   cv::imwrite("/root/data/edgeMaps/" + std::to_string(events_left_.back().ts.nsec) + ".png", edgeMap);
   size_t sumEdge = cv::sum(edgeMap)[0] / 255;
   ROS_INFO_STREAM("sumEdge: " << std::to_string(sumEdge));
@@ -626,7 +626,7 @@ void esvo_Mapping::stampedPoseCallback(
   // LOG(INFO) << "lock in esvo_Mapping::stampedPoseCallback";
   std::lock_guard<std::mutex> lock(data_mutex_);
   // To check inconsistent timestamps and reset.
-  static constexpr double max_time_diff_before_reset_s = 1.5;
+  static constexpr double max_time_diff_before_reset_s = 0.5;
   const ros::Time stamp_first_event = ps_msg->header.stamp;
   std::string *err_tf = new std::string();
 //  int iGetLastest_common_time =
@@ -692,7 +692,7 @@ void esvo_Mapping::eventsCallback(
   // LOG(INFO) << "lock in esvo_Mapping::eventsCallback";
   std::lock_guard<std::mutex> lock(data_mutex_);
 
-  static constexpr double max_time_diff_before_reset_s = 1.5;
+  static constexpr double max_time_diff_before_reset_s = 0.5;
   const ros::Time stamp_first_event = msg->events[0].ts;
 
   // check time stamp inconsistency
@@ -743,7 +743,7 @@ void esvo_Mapping::timeSurfaceCallback(
   // check time-stamp inconsistency
   if(!TS_history_.empty())
   {
-    static constexpr double max_time_diff_before_reset_s = 1.5;
+    static constexpr double max_time_diff_before_reset_s = 0.5;
     const ros::Time stamp_last_image = TS_history_.rbegin()->first;
     const double dt = time_surface_left->header.stamp.toSec() - stamp_last_image.toSec();
     if(dt < 0 || std::fabs(dt) >= max_time_diff_before_reset_s)
