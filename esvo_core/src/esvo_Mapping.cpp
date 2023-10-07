@@ -445,13 +445,20 @@ bool esvo_Mapping::InitializationAtTime(const ros::Time &t)
   cv::Mat dispMap, dispMap8;
   sgbm_->compute(TS_obs_.second.cvImagePtr_left_->image, TS_obs_.second.cvImagePtr_right_->image, dispMap);
   dispMap.convertTo(dispMap8, CV_8U, 255/(num_disparities_*16.));
+  cv::imwrite("/root/data/dispMap/" + std::to_string(events_left_.back().ts.nsec) + ".png", dispMap);
+  cv::imwrite("/root/data/tsobsLeft/" + std::to_string(events_left_.back().ts.nsec) + ".png", TS_obs_.second.cvImagePtr_left_->image);
+  cv::imwrite("/root/data/tsobsRight/" + std::to_string(events_left_.back().ts.nsec) + ".png", TS_obs_.second.cvImagePtr_right_->image);
 
   // get the event map (binary mask)
   cv::Mat edgeMap;
   std::vector<std::pair<size_t, size_t> > vEdgeletCoordinates;
   ROS_INFO_STREAM("vEventsPtr_left_SGM_ size: " << std::to_string(vEventsPtr_left_SGM_.size()));
   createEdgeMask(vEventsPtr_left_SGM_, camSysPtr_->cam_left_ptr_,
-                 edgeMap, vEdgeletCoordinates, false, 0);
+                 edgeMap, vEdgeletCoordinates, false, 1);
+  cv::imwrite("/root/data/edgeMaps/" + std::to_string(events_left_.back().ts.nsec) + ".png", edgeMap);
+  size_t sumEdge = cv::sum(edgeMap)[0] / 255;
+  ROS_INFO_STREAM("sumEdge: " << std::to_string(sumEdge));
+
 
   // Apply logical "AND" operation and transfer "disparity" to "invDepth".
   std::vector<DepthPoint> vdp_sgm;
@@ -1035,6 +1042,7 @@ void esvo_Mapping::createEdgeMask(
   vEdgeletCoordinates.reserve(col*row);
 
   auto it_tmp = vEventsPtr.begin();
+  ROS_INFO_STREAM("edgeMask: col: " << std::to_string(col) << ", row: " << std::to_string(row));
   while (it_tmp != vEventsPtr.end())
   {
     // undistortion + rectification

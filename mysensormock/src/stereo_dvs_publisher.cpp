@@ -129,7 +129,7 @@ float GetOneArray(dvs_msgs::EventArray& leftEvents, std::vector<Event>& vEvents,
         dvs_msgs::Event oneEvent;
         oneEvent.x = vEvents[eventCount].x;
         oneEvent.y = vEvents[eventCount].y;
-        ros::Duration eventTimeBias(vEvents[eventCount].ts);
+        ros::Duration eventTimeBias(vEvents[eventCount].ts - sLeftStartTimeStamp);
         ts = tsBase + eventTimeBias;
         oneEvent.ts = ts;
         oneEvent.polarity = vEvents[eventCount].polarity;
@@ -196,7 +196,7 @@ int main(int argc, char **argv)
   ros::Publisher left_pub = n.advertise<dvs_msgs::EventArray>("/davis/left/events", 100);
   ros::Publisher right_pub = n.advertise<dvs_msgs::EventArray>("/davis/right/events", 100);
 
-  ros::Rate loop_rate(10000);
+  ros::Rate loop_rate(10);
   ROS_INFO("set up publishers.");
   /**
    * A count of how many messages we have sent. This is used to create
@@ -281,7 +281,7 @@ int main(int argc, char **argv)
   size_t frameCount = 0;
   size_t eventCountLeft = 0;
   size_t eventCountRight = 0;
-  float perStackTimeLength = 0.001;  // sec.
+  float perStackTimeLength = 0.01;  // sec.
 
   while (ros::ok())
   {
