@@ -19,6 +19,8 @@ struct Event {
     size_t y;
     bool polarity;
     float ts;
+    int secs;
+    int nsecs;
     // ...
 };
 
@@ -73,19 +75,84 @@ void LoadEventsIntoMemory(std::vector<Event>& vEvents, std::ifstream& fileLeftDa
     else{
         bool bIsNotEndOfData = true;
         std::string line;
+        size_t countLine = 0;
+        size_t countSharp = 0;
+        Event oneEvent;
+        long startTimeSec = -1;
         while (bIsNotEndOfData) {
             std::getline(fileLeftData, line);
             if (fileLeftData.eof()){
                 bIsNotEndOfData = false;
             }
             else{
-                std::vector<std::string> splitsLine = SplitString(line, " ");  // t, x, y, p
-                Event oneEvent;
-                oneEvent.x = std::stoi(splitsLine[1]);
-                oneEvent.y = std::stoi(splitsLine[2]);
-                oneEvent.ts = std::stof(splitsLine[0]);
-                oneEvent.polarity = static_cast<bool>(std::stoi(splitsLine[3]));
-                vEvents.emplace_back(oneEvent);
+                if (line[0] == '#'){
+                    countSharp++;
+                    while (true) {
+                        std::getline(fileLeftData, line);   
+                        // Process each line here
+                        if (line[0] == '#') {
+                            countSharp++;
+                        }
+                        if (countSharp > 5) {
+                            bIsNotEndOfData = false;
+                            break;
+                        }
+                        if (line[0] != '#' && countSharp == 5) {
+                            for (size_t skipLine = 0; skipLine < 8; skipLine++){
+                                std::getline(fileLeftData, line);
+                            }
+                            countSharp = 0;
+                            countLine = 0;
+                            break;
+                        }
+                    }
+                }
+                else if (countLine % 7 == 0){
+                    countLine ++;
+                    continue;
+                }
+                else if (countLine % 7 == 1) {
+                    std::vector<std::string> splitsLine = SplitString(line, ":");
+                    oneEvent.x = std::stoi(splitsLine[splitsLine.size() - 1]);
+                    countLine ++;
+                    continue;
+                }
+                else if (countLine % 7 == 2) {
+                    std::vector<std::string> splitsLine = SplitString(line, ":");
+                    oneEvent.y = std::stoi(splitsLine[splitsLine.size() - 1]);
+                    countLine ++;
+                    continue;
+                }
+                else if (countLine % 7 == 3) {
+                    countLine ++;
+                    continue;
+                }
+                else if (countLine % 7 == 4) {
+                    std::vector<std::string> splitsLine = SplitString(line, ":");
+                    oneEvent.secs = std::stoi(splitsLine[splitsLine.size() - 1]);
+                    if (startTimeSec < 0) {
+                        startTimeSec = oneEvent.secs;
+                    }
+                    oneEvent.secs -= startTimeSec;
+                    countLine ++;
+                    continue;  
+                }
+                else if (countLine % 7 == 5) {
+                    std::vector<std::string> splitsLine = SplitString(line, ":");
+                    oneEvent.nsecs = std::stoi(splitsLine[splitsLine.size() - 1]);
+                    oneEvent.ts = (float)oneEvent.secs + oneEvent.nsecs * 1e-9;
+                    countLine ++;
+                    continue;  
+                }
+                else if (countLine % 7 == 6) {
+                    std::vector<std::string> splitsLine = SplitString(line, ":");
+                    oneEvent.polarity = splitsLine[splitsLine.size() - 1] == "False"? false : true;
+                    countLine=0;
+                    vEvents.emplace_back(oneEvent);
+                    ROS_INFO("load one event: %d, %d, %d, %d, %d", oneEvent.x, oneEvent.y, oneEvent.secs, oneEvent.nsecs, oneEvent.polarity);
+                    continue;  
+                }
+
             }
         }
         ROS_INFO("finsihed loading one TXT event data file. (%d)", vEvents.size());
@@ -103,8 +170,8 @@ void SaveToBinary(std::vector<Event>& vEvents, std::string datapath) {
 
 float GetOneArray(dvs_msgs::EventArray& leftEvents, std::vector<Event>& vEvents, size_t& eventCount, const size_t frameCount, const ros::Time tsBase, const float stackTimeLength, const float tsToStop = 1e9){
     ROS_INFO("Entered GetOneArray");
-    leftEvents.height = 720;
-    leftEvents.width = 1280;
+    leftEvents.height = 180;
+    leftEvents.width = 240;
     std_msgs::Header header;
 
     std::string line;
@@ -202,11 +269,11 @@ int main(int argc, char **argv)
    * A count of how many messages we have sent. This is used to create
    * a unique string for each message.
    */
-  std::string datarootPath = "/root/data/vibrationRollerNight/seq1/";
+  std::string datarootPath = "/root/data/";
   
-  // open data files
+// //   open data files
 //   std::filesystem::path leftDataPath = datarootPath;
-//   leftDataPath.append("leftcam/DVS_TEXT.txt");
+//   leftDataPath.append("rpg_les.txt");
 //   std::ifstream fileLeftData(leftDataPath.string());
 //   if (!fileLeftData.is_open()) {
 //       std::cerr << "Failed to open left data file." << std::endl;
@@ -217,15 +284,15 @@ int main(int argc, char **argv)
 //       bool bIsLoop = true;
 //       while (bIsLoop) {
 //           std::getline(fileLeftData, line);   
-// 	  // Process each line here
-//           if (line[0] != '#') {
-// 	      bIsLoop = false;
-// 	  }
+// 	      // Process each line here
+//           if (line[0] == 'e') {
+// 	        bIsLoop = false;
+// 	      }
 //       }
 //   }
 //   ROS_INFO("left data file opened.");
 //   std::filesystem::path rightDataPath = datarootPath;
-//   rightDataPath.append("rightcam/DVS_TEXT.txt");
+//   rightDataPath.append("rpg_res.txt");
 //   std::ifstream fileRightData(rightDataPath.string());
 //   if (!fileRightData.is_open()) {
 //       std::cerr << "Failed to open right data file." << std::endl;
@@ -237,7 +304,7 @@ int main(int argc, char **argv)
 //       while (bIsLoop) {
 //           std::getline(fileRightData, line);   
 // 	      // Process each line here
-//           if (line[0] != '#') {
+//           if (line[0] == 'e') {
 // 	        bIsLoop = false;
 // 	      }
 //       }
@@ -250,33 +317,35 @@ int main(int argc, char **argv)
 //   fileLeftData.close();
 //   fileRightData.close();
 
+//   std::filesystem::path leftBinPath = datarootPath;
+//   leftBinPath.append("rpg_les.bin");
+//   SaveToBinary(vLeft, leftBinPath.string());
+//   std::filesystem::path rightBinPath = datarootPath;
+//   rightBinPath.append("rpg_res.bin");
+//   SaveToBinary(vRight, rightBinPath.string());
+
+
   std::vector<Event> vLeft, vRight;
   std::filesystem::path leftDataPath = datarootPath;
-  leftDataPath.append("leftcam/vLeft.bin");
+  leftDataPath.append("rpg_les.bin");
   std::ifstream fileLeftData(leftDataPath.string());
   if (!fileLeftData.is_open()) {
       std::cerr << "Failed to open left data file." << std::endl;
       return 1; // Exit with an error code
   }
-  LoadEventsIntoMemory(vLeft, fileLeftData, true, 187481619);
+  LoadEventsIntoMemory(vLeft, fileLeftData, true, 8580885);
   fileLeftData.close();
 
   std::filesystem::path rightDataPath = datarootPath;
-  rightDataPath.append("rightcam/vRight.bin");
+  rightDataPath.append("rpg_res.bin");
   std::ifstream fileRightData(rightDataPath.string());
   if (!fileRightData.is_open()) {
       std::cerr << "Failed to open right data file." << std::endl;
       return 1;
   }
-  LoadEventsIntoMemory(vRight, fileRightData, true, 175186432);
+  LoadEventsIntoMemory(vRight, fileRightData, true, 8891108);
   fileRightData.close();
 
-  std::filesystem::path leftBinPath = datarootPath;
-  leftBinPath.append("leftcam/vLeft.bin");
-  SaveToBinary(vLeft, leftBinPath.string());
-  std::filesystem::path rightBinPath = datarootPath;
-  rightBinPath.append("rightcam/vRight.bin");
-  SaveToBinary(vRight, rightBinPath.string());
 
   size_t frameCount = 0;
   size_t eventCountLeft = 0;
