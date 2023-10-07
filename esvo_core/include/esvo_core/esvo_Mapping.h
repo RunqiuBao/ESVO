@@ -7,7 +7,7 @@
 #include <message_filters/subscriber.h>
 #include <message_filters/synchronizer.h>
 #include <message_filters/sync_policies/exact_time.h>
-
+#include <message_filters/sync_policies/approximate_time.h>
 #include <tf2_ros/transform_broadcaster.h>
 
 #include <esvo_core/container/CameraSystem.h>
@@ -119,6 +119,7 @@ class esvo_Mapping
 
   // Time-Surface sync policy
   typedef message_filters::sync_policies::ExactTime<sensor_msgs::Image, sensor_msgs::Image> ExactSyncPolicy;
+  typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image> ApproxiSyncPolicy;
   message_filters::Synchronizer<ExactSyncPolicy> TS_sync_;
 
   // dynamic configuration (modify parameters online)

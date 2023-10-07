@@ -452,7 +452,6 @@ bool esvo_Mapping::InitializationAtTime(const ros::Time &t)
   ROS_INFO_STREAM("vEventsPtr_left_SGM_ size: " << std::to_string(vEventsPtr_left_SGM_.size()));
   createEdgeMask(vEventsPtr_left_SGM_, camSysPtr_->cam_left_ptr_,
                  edgeMap, vEdgeletCoordinates, false, 0);
-  cv::imwrite("/root/data/" + std::to_string(t.nsec) + ".png", edgeMap);
 
   // Apply logical "AND" operation and transfer "disparity" to "invDepth".
   std::vector<DepthPoint> vdp_sgm;
