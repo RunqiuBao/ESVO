@@ -672,7 +672,7 @@ void esvo_MVStereo::stampedPoseCallback(
 {
   std::lock_guard<std::mutex> lock(data_mutex_);
   // To check inconsistent timestamps and reset.
-  static constexpr double max_time_diff_before_reset_s = 1.5;
+  static constexpr double max_time_diff_before_reset_s = 0.5;
   const ros::Time stamp_first_event = ps_msg->header.stamp;
   std::string *err_tf = new std::string();
   int iGetLastest_common_time =
@@ -750,7 +750,7 @@ void esvo_MVStereo::eventsCallback(
 {
   std::lock_guard<std::mutex> lock(data_mutex_);
 
-  static constexpr double max_time_diff_before_reset_s = 1.5;
+  static constexpr double max_time_diff_before_reset_s = 0.5;
   const ros::Time stamp_first_event = msg->events[0].ts;
 
   // check time stamp inconsistency

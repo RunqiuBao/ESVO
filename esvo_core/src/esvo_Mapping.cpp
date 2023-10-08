@@ -454,7 +454,7 @@ bool esvo_Mapping::InitializationAtTime(const ros::Time &t)
   std::vector<std::pair<size_t, size_t> > vEdgeletCoordinates;
   ROS_INFO_STREAM("vEventsPtr_left_SGM_ size: " << std::to_string(vEventsPtr_left_SGM_.size()));
   createEdgeMask(vEventsPtr_left_SGM_, camSysPtr_->cam_left_ptr_,
-                 edgeMap, vEdgeletCoordinates, false, 1);
+                 edgeMap, vEdgeletCoordinates, false, 0);
   cv::imwrite("/root/data/edgeMaps/" + std::to_string(events_left_.back().ts.nsec) + ".png", edgeMap);
   size_t sumEdge = cv::sum(edgeMap)[0] / 255;
   ROS_INFO_STREAM("sumEdge: " << std::to_string(sumEdge));

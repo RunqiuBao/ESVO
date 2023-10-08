@@ -250,6 +250,13 @@ int main(int argc, char **argv)
 //   fileLeftData.close();
 //   fileRightData.close();
 
+//   std::filesystem::path leftBinPath = datarootPath;
+//   leftBinPath.append("leftcam/vLeft.bin");
+//   SaveToBinary(vLeft, leftBinPath.string());
+//   std::filesystem::path rightBinPath = datarootPath;
+//   rightBinPath.append("rightcam/vRight.bin");
+//   SaveToBinary(vRight, rightBinPath.string());
+
   std::vector<Event> vLeft, vRight;
   std::filesystem::path leftDataPath = datarootPath;
   leftDataPath.append("leftcam/vLeft.bin");
@@ -271,17 +278,10 @@ int main(int argc, char **argv)
   LoadEventsIntoMemory(vRight, fileRightData, true, 175186432);
   fileRightData.close();
 
-  std::filesystem::path leftBinPath = datarootPath;
-  leftBinPath.append("leftcam/vLeft.bin");
-  SaveToBinary(vLeft, leftBinPath.string());
-  std::filesystem::path rightBinPath = datarootPath;
-  rightBinPath.append("rightcam/vRight.bin");
-  SaveToBinary(vRight, rightBinPath.string());
-
   size_t frameCount = 0;
   size_t eventCountLeft = 0;
   size_t eventCountRight = 0;
-  float perStackTimeLength = 0.01;  // sec.
+  float perStackTimeLength = 0.005;  // sec.
 
   while (ros::ok())
   {
