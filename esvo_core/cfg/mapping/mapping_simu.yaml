@@ -1,5 +1,5 @@
-invDepth_min_range: 0.2
-invDepth_max_range: 2
+invDepth_min_range: 0.001
+invDepth_max_range: 20
 residual_vis_threshold: 20
 stdVar_vis_threshold: 0.015
 age_max_range: 10

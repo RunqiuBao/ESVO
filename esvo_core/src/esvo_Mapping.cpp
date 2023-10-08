@@ -470,14 +470,18 @@ bool esvo_Mapping::InitializationAtTime(const ros::Time &t)
     size_t y = vEdgeletCoordinates[i].second;
 
     double disp = dispMap.at<short>(y,x) / 16.0;
-    if(disp < 0)
+    if(disp < 0){
+      // ROS_INFO_STREAM("skip edge point due to disp<0: " << std::to_string(disp));
       continue;
+    }
     DepthPoint dp(x,y);
     Eigen::Vector2d p_img(x*1.0,y*1.0);
     dp.update_x(p_img);
     double invDepth = disp / (camSysPtr_->cam_left_ptr_->P_(0,0) * camSysPtr_->baseline_);
-    if(invDepth < invDepth_min_range_ || invDepth > invDepth_max_range_)
+    if(invDepth < invDepth_min_range_ || invDepth > invDepth_max_range_){
+      // ROS_INFO_STREAM("skip edge point due to invDepth not in range: " << std::to_string(invDepth) << " (" << std::to_string(invDepth_min_range_) << " / " << std::to_string(invDepth_max_range_) << ").");
       continue;
+    }
     Eigen::Vector3d p_cam;
     camSysPtr_->cam_left_ptr_->cam2World(p_img, invDepth, p_cam);
     dp.update_p_cam(p_cam);

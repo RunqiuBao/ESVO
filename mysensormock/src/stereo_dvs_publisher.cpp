@@ -204,9 +204,9 @@ int main(int argc, char **argv)
    */
   std::string datarootPath = "/root/data/vibrationRollerNight/seq1/";
   
-  // open data files
+// //   open data files
 //   std::filesystem::path leftDataPath = datarootPath;
-//   leftDataPath.append("leftcam/DVS_TEXT.txt");
+//   leftDataPath.append("leftevents/DVS_TEXT.txt");
 //   std::ifstream fileLeftData(leftDataPath.string());
 //   if (!fileLeftData.is_open()) {
 //       std::cerr << "Failed to open left data file." << std::endl;
@@ -225,7 +225,7 @@ int main(int argc, char **argv)
 //   }
 //   ROS_INFO("left data file opened.");
 //   std::filesystem::path rightDataPath = datarootPath;
-//   rightDataPath.append("rightcam/DVS_TEXT.txt");
+//   rightDataPath.append("rightevents/DVS_TEXT.txt");
 //   std::ifstream fileRightData(rightDataPath.string());
 //   if (!fileRightData.is_open()) {
 //       std::cerr << "Failed to open right data file." << std::endl;
@@ -251,31 +251,31 @@ int main(int argc, char **argv)
 //   fileRightData.close();
 
 //   std::filesystem::path leftBinPath = datarootPath;
-//   leftBinPath.append("leftcam/vLeft.bin");
+//   leftBinPath.append("leftevents/evts.bin");
 //   SaveToBinary(vLeft, leftBinPath.string());
 //   std::filesystem::path rightBinPath = datarootPath;
-//   rightBinPath.append("rightcam/vRight.bin");
+//   rightBinPath.append("rightevents/evts.bin");
 //   SaveToBinary(vRight, rightBinPath.string());
 
   std::vector<Event> vLeft, vRight;
   std::filesystem::path leftDataPath = datarootPath;
-  leftDataPath.append("leftcam/vLeft.bin");
+  leftDataPath.append("leftevents/evts.bin");
   std::ifstream fileLeftData(leftDataPath.string());
   if (!fileLeftData.is_open()) {
       std::cerr << "Failed to open left data file." << std::endl;
       return 1; // Exit with an error code
   }
-  LoadEventsIntoMemory(vLeft, fileLeftData, true, 187481619);
+  LoadEventsIntoMemory(vLeft, fileLeftData, true, 187481619);  // seq1: 187481619  seq4: 35352865
   fileLeftData.close();
 
   std::filesystem::path rightDataPath = datarootPath;
-  rightDataPath.append("rightcam/vRight.bin");
+  rightDataPath.append("rightevents/evts.bin");
   std::ifstream fileRightData(rightDataPath.string());
   if (!fileRightData.is_open()) {
       std::cerr << "Failed to open right data file." << std::endl;
       return 1;
   }
-  LoadEventsIntoMemory(vRight, fileRightData, true, 175186432);
+  LoadEventsIntoMemory(vRight, fileRightData, true, 175186432);  // seq1: 175186432  seq4: 29716513
   fileRightData.close();
 
   size_t frameCount = 0;
